@@ -5,58 +5,88 @@ const PROJECT_ROOT = __dirname;
 
 // ========== 安全列表（绝对不删除） ==========
 const keepPaths = [
-    'server/debug',               // 保留整个 debug 目录（hash.js 依赖）
-    'server/debug/imageStorageDebug.js',
+    'server/debug',               // 保留 debug 目录（imageStorageDebug.js 等依赖）
     'server/image_storage',       // 保留目录结构，仅清空内部文件
     'deployments',                // 合约部署记录
-    'contracts',                  // 源码
+    'contracts',                  // 合约源码
     'scripts',                    // 保留所有非 .bak 脚本
-    'test',
+    'test',                       // 测试目录
     'hardhat.config.js',
     'package.json',
     '.env',
     '.gitignore',
 ];
 
-// ========== 要删除的目录（相对路径） ==========
+// ========== 要整体删除的目录 ==========
 const dirsToDelete = [
-    'maybe_useless',
-    'web/bull',
-    'web/output',
+    'maybe_useless',              // 临时/无用目录
+    'web/bull',                   // 临时目录
+    'web/output',                 // 临时输出目录
+    'image-blockchain',           // 无关嵌套项目
+    'web/build',                  // 前端构建缓存，可重建
+    'artifacts',                  // Hardhat 编译产物，可重建
     'cache',                      // Hardhat 缓存，可重建
-    'artifacts',                  // 编译产物，可重建
-    'image-blockchain',           // 看起来是无关的嵌套项目
+    'node_modules',               // 根依赖，可重装
+    'server/node_modules',        // 后端依赖，可重装
+    'web/node_modules',           // 前端依赖，可重装
 ];
 
-// ========== 要删除的文件模式 ==========
-const filePatternsToDelete = [
+// ========== 要单独删除的文件（精确路径） ==========
+const filesToDelete = [
+    // 根目录临时报告/脚本
+    'classname-report.txt',
+    'code_summary.txt',
+    'installation_guide_report.txt',
+    'contract_recovery_report.js',
+    'final-fix.js',
+    'fix-duplicate-export.js',
+    'fix-permissions.ps1',
+    'listener_config.json',
+    'precise-fix.js',
+    'collect_files.js',
+    'check_persistence.js',
+    'validate_data_flow.js',
+    // 根目录空文件/错误命名文件
+    'await',
+    'const',
+    'row.hash))',
+    'r.success).length',
+    '{',
+    '}',
+    // server 目录下特定文件
+    'server/server-esm-conversion-report.json',
+    'server/test-h_and_up.html',
+    'server/test-all-imports.js',
+    'server/historyController.js',
+    'server/logs/reset_history.log',
+    // server 下特殊空文件
+    'server/{',
+    'server/}',
+    // web 目录下临时文件
+    'web/code_summary.txt',
+    'web/installation_guide_report.txt',
+    'web/collect_files.js',
+    'web/precise-fix.js',
+    'web/db_report.txt',
+    // 调试图片
+    'server/debug/test-image.jpg',
+];
+
+// ========== 递归删除时匹配的文件模式 ==========
+const recursivePatterns = [
     { pattern: /\.bak$/i, description: '备份文件' },
-    { pattern: /\.txt$/, description: '文本报告（非必要）' },
-    { pattern: /^classname-report\.txt$/, description: '类名报告' },
-    { pattern: /^server-esm-conversion-report\.json$/, description: 'ESM 转换报告' },
-    { pattern: /^code_summary\.txt$/, description: '代码摘要' },
-    { pattern: /^installation_guide_report\.txt$/, description: '安装指南报告' },
-    { pattern: /^contract_recovery_report\.js$/, description: '恢复报告脚本' },
-    { pattern: /^final-fix\.js$/, description: '临时修复脚本' },
-    { pattern: /^fix-duplicate-export\.js$/, description: '临时修复脚本' },
-    { pattern: /^fix-permissions\.ps1$/, description: '权限脚本' },
-    { pattern: /^listener_config\.json$/, description: '监听配置（不确定用途）' },
-    { pattern: /^precise-fix\.js$/, description: '临时修复' },
-    { pattern: /^collect_files\.js$/, description: '收集文件脚本（根目录重复）' },
-    { pattern: /^check_persistence\.js$/, description: '检查脚本（根目录）' },
-    { pattern: /^auto-process\.js$/, description: '自动流程（您自己决定是否保留，这里不删）' }, // 不删
-    { pattern: /^validate_data_flow\.js$/, description: '数据流验证（根目录重复，可删）' },
-    // 无扩展名的垃圾文件
-    { pattern: /^await$/, description: '空文件' },
-    { pattern: /^const$/, description: '空文件' },
+    { pattern: /-report\.txt$/, description: '文本报告' },
+    { pattern: /^.*\.report\.js$/, description: '报告脚本' },
+    { pattern: /^console\.log\(/, description: '错误输出文件（以 console.log( 开头）' },
+    { pattern: /^\{$/, description: '空文件 {' },
+    { pattern: /^\}$/, description: '空文件 }' },
+    { pattern: /^await$/, description: '空文件 await' },
+    { pattern: /^const$/, description: '空文件 const' },
     { pattern: /^row\.hash\)\)$/, description: '空文件' },
     { pattern: /^r\.success\)\.length$/, description: '空文件' },
-    { pattern: /^{$/, description: '空文件' },
-    { pattern: /^}$/, description: '空文件' },
-    { pattern: /^console\.log\(.*\)$/, description: '错误输出文件' },
 ];
 
-// 辅助函数
+// ========== 辅助函数 ==========
 function deleteDir(dirPath) {
     if (fs.existsSync(dirPath)) {
         fs.rmSync(dirPath, { recursive: true, force: true });
@@ -82,11 +112,11 @@ function clearDirContent(dirPath) {
             const fullPath = path.join(dirPath, file);
             fs.rmSync(fullPath, { recursive: true, force: true });
         }
-        console.log(`[清空目录] ${dirPath} (保留目录)`);
+        console.log(`[清空目录] ${dirPath} (保留目录结构)`);
     }
 }
 
-// 递归查找并删除匹配的文件（排除 keepPaths）
+// 递归遍历并删除匹配模式的文件（跳过保留目录）
 function walkAndDelete(rootDir, patterns, keepDirs) {
     if (!fs.existsSync(rootDir)) return;
     const items = fs.readdirSync(rootDir);
@@ -95,7 +125,8 @@ function walkAndDelete(rootDir, patterns, keepDirs) {
         // 检查是否在保留目录下
         let shouldSkip = false;
         for (const keep of keepDirs) {
-            if (fullPath.startsWith(path.join(PROJECT_ROOT, keep))) {
+            const keepFull = path.join(PROJECT_ROOT, keep);
+            if (fullPath.startsWith(keepFull)) {
                 shouldSkip = true;
                 break;
             }
@@ -104,6 +135,7 @@ function walkAndDelete(rootDir, patterns, keepDirs) {
 
         const stat = fs.statSync(fullPath);
         if (stat.isDirectory()) {
+            // 跳过 node_modules 和 .git，避免耗时的深层遍历（它们会被整体删除）
             if (item === 'node_modules' || item === '.git') continue;
             walkAndDelete(fullPath, patterns, keepDirs);
         } else if (stat.isFile()) {
@@ -118,72 +150,54 @@ function walkAndDelete(rootDir, patterns, keepDirs) {
     }
 }
 
-// 主函数
+// ========== 主清理函数 ==========
 function cleanProject() {
-    console.log('🧹 开始安全清理项目废弃文件...\n');
-    console.log('⚠️ 保留目录: server/debug, deployments, contracts, scripts, test 等\n');
+    console.log('🧹 开始清理项目废弃文件...\n');
+    console.log('⚠️ 保留目录: server/debug, server/image_storage, deployments, contracts, scripts, test 等\n');
 
-    // 1. 删除指定目录
+    // 1. 删除指定的整个目录
     for (const dir of dirsToDelete) {
         const fullPath = path.join(PROJECT_ROOT, dir);
         deleteDir(fullPath);
     }
 
-    // 2. 清空 server/image_storage 中的文件（保留目录）
+    // 2. 清空 server/image_storage 内容（保留目录）
     clearDirContent(path.join(PROJECT_ROOT, 'server', 'image_storage'));
 
-    // 3. 清空 server/debug/test-image.jpg（大文件，可删），但保留 imageStorageDebug.js
-    const testImage = path.join(PROJECT_ROOT, 'server', 'debug', 'test-image.jpg');
-    if (fs.existsSync(testImage)) {
-        deleteFile(testImage);
+    // 3. 删除精确路径的文件
+    for (const file of filesToDelete) {
+        const fullPath = path.join(PROJECT_ROOT, file);
+        deleteFile(fullPath);
     }
 
-    // 4. 删除根目录下匹配的文件（排除 auto-process.js 等不想删的）
-    const rootFilesToDelete = [
-        'classname-report.txt',
-        'server-esm-conversion-report.json',
-        'code_summary.txt',
-        'installation_guide_report.txt',
-        'contract_recovery_report.js',
-        'final-fix.js',
-        'fix-duplicate-export.js',
-        'fix-permissions.ps1',
-        'listener_config.json',
-        'precise-fix.js',
-        'collect_files.js',
-        'check_persistence.js',
-        'validate_data_flow.js',
-        'await', 'const', 'row.hash))', 'r.success).length', '{', '}',
-        'console.log(Batch restored hashes',
-        'console.log(Contract deployed to',
-        'console.log(Hash1 active',
-        'console.log(Owner address',
-        'console.log(Restored hash',
-        'console.log(Total hashes',
-        'console.log(Uploaded hash',
-    ];
-    for (const file of rootFilesToDelete) {
-        deleteFile(path.join(PROJECT_ROOT, file));
-    }
+    // 4. 递归删除其他匹配模式的文件（跳过保留目录）
+    console.log('\n🔍 递归扫描并删除 .bak、报告、console.log( 文件及空命名文件...');
+    walkAndDelete(PROJECT_ROOT, recursivePatterns, keepPaths);
 
-    // 5. 递归删除其他 .bak 和报告文件（跳过保留目录）
-    console.log('\n🔍 扫描并删除 .bak 及临时报告文件（跳过 server/debug 等）...');
-    walkAndDelete(PROJECT_ROOT, [
-        { pattern: /\.bak$/i, description: '备份' },
-        { pattern: /-report\.txt$/, description: '报告文本' },
-        { pattern: /^.*\.report\.js$/, description: '报告脚本' },
-    ], ['server/debug', 'deployments', 'contracts', 'scripts', 'test']);
+    // 5. 额外处理根目录下所有以 console.log( 开头的文件（防止有遗漏）
+    if (fs.existsSync(PROJECT_ROOT)) {
+        const rootItems = fs.readdirSync(PROJECT_ROOT);
+        for (const item of rootItems) {
+            if (item.startsWith('console.log(')) {
+                deleteFile(path.join(PROJECT_ROOT, item));
+            }
+        }
+    }
 
     console.log('\n✅ 清理完成！');
-    console.log('📌 保留内容：');
-    console.log('   - server/debug/imageStorageDebug.js (hash.js 依赖)');
+    console.log('📌 已保留内容：');
+    console.log('   - server/debug/ 目录（含 imageStorageDebug.js）');
+    console.log('   - server/image_storage/ 目录结构');
     console.log('   - 所有 .sol 合约源文件');
-    console.log('   - 所有 scripts/ 下的非备份脚本');
+    console.log('   - scripts/ 下的非备份脚本');
     console.log('   - deployments/ 部署记录');
-    console.log('\n⚠️ 下一步：');
-    console.log('   1. 如果之前删除了 artifacts/ 和 cache/，运行 npx hardhat compile 重新编译');
-    console.log('   2. 启动后端测试：node server/index.js');
-    console.log('   3. 如果还有引用错误，请检查 hash.js 等文件是否还引用了其他已删内容');
+    console.log('   - 配置文件（.env, package.json, hardhat.config.js）');
+    console.log('\n⚠️ 后续操作建议：');
+    console.log('   1. 若删除了 artifacts/ 或 cache/，请运行 npx hardhat compile 重新编译');
+    console.log('   2. 若删除了 node_modules 目录，请分别运行 npm install、cd server && npm install、cd web && npm install');
+    console.log('   3. 前端构建：cd web && npm run build（重新生成 web/build）');
+    console.log('   4. 检查 server/logs/ 目录是否存在，若需要日志功能可保留空目录');
 }
 
+// 执行清理
 cleanProject();
