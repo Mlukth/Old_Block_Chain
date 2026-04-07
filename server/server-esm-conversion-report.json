@@ -1,0 +1,360 @@
+{
+  "timestamp": "2025-07-19T08:01:22.970Z",
+  "summary": {
+    "totalFiles": 10,
+    "convertedFiles": 10,
+    "skippedFiles": 0,
+    "errorCount": 0,
+    "conversionRate": "100.00%"
+  },
+  "detailedReport": {
+    "totalFiles": 10,
+    "convertedFiles": 10,
+    "skippedFiles": 0,
+    "files": {
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\db\\index.js": {
+        "path": "db\\index.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 0,
+            "matches": []
+          }
+        },
+        "addedDirname": false,
+        "modified": false,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\middleware\\auth.js": {
+        "path": "middleware\\auth.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 0,
+            "matches": []
+          }
+        },
+        "addedDirname": false,
+        "modified": false,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\middleware\\validation.js": {
+        "path": "middleware\\validation.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 0,
+            "matches": []
+          }
+        },
+        "addedDirname": false,
+        "modified": false,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\routes\\auth.js": {
+        "path": "routes\\auth.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 3,
+            "matches": [
+              "from '../db.js'",
+              "from '../middleware/validation.js'",
+              "from '../middleware/auth.js'"
+            ]
+          }
+        },
+        "addedDirname": false,
+        "modified": true,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\routes\\hash.js": {
+        "path": "routes\\hash.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 5,
+            "matches": [
+              "from '../debug/imageStorageDebug.js'",
+              "from '../utils/hashCalculator.js'",
+              "from '../db.js'",
+              "from '../middleware/auth.js'",
+              "from '../utils/hashCalculator.js'"
+            ]
+          }
+        },
+        "addedDirname": false,
+        "modified": true,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\routes\\history.js": {
+        "path": "routes\\history.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 2,
+            "matches": [
+              "from '../middleware/auth.js'",
+              "from '../db/index.js'"
+            ]
+          }
+        },
+        "addedDirname": false,
+        "modified": true,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\routes\\protected.js": {
+        "path": "routes\\protected.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 1,
+            "matches": [
+              "from '../middleware/auth.js'"
+            ]
+          }
+        },
+        "addedDirname": false,
+        "modified": true,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\utils\\hashCalculator.js": {
+        "path": "utils\\hashCalculator.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 1,
+            "matches": [
+              "from '../db.js'"
+            ]
+          }
+        },
+        "addedDirname": false,
+        "modified": true,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\utils\\scriptExecutor.js": {
+        "path": "utils\\scriptExecutor.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 0,
+            "matches": []
+          }
+        },
+        "addedDirname": false,
+        "modified": false,
+        "skipped": true
+      },
+      "D:\\hardhat_resave\\my-hardhat-project3\\server\\index.js": {
+        "path": "index.js",
+        "rulesApplied": {
+          "路由导出": {
+            "count": 0,
+            "matches": []
+          },
+          "对象导出": {
+            "count": 0,
+            "matches": []
+          },
+          "单变量导出": {
+            "count": 0,
+            "matches": []
+          },
+          "默认导入": {
+            "count": 0,
+            "matches": []
+          },
+          "解构导入": {
+            "count": 0,
+            "matches": []
+          },
+          "添加扩展名": {
+            "count": 4,
+            "matches": [
+              "from './routes/history.js'",
+              "from './routes/hash.js'",
+              "from './routes/auth.js'",
+              "from './routes/protected.js'"
+            ]
+          }
+        },
+        "addedDirname": false,
+        "modified": true,
+        "skipped": true
+      }
+    },
+    "errors": {}
+  }
+}

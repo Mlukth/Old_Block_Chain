@@ -1,0 +1,199 @@
+// "D:\hardhat_resave\my-hardhat-project3\scripts\sync_state.js"
+const fs = require('fs');
+const path = require('path');
+const ethers = require('ethers'); // 修改导入方式
+const config = require('./config');
+const sqlite3 = require('sqlite3').verbose();
+
+// 1. 创建可靠的提供者 - 使用 v6 语法
+const provider = new ethers.JsonRpcProvider(config.rpcUrl);
+
+// 2. 创建签名者
+const signer = new ethers.Wallet(config.privateKey, provider);
+
+// 3. 直接加载ABI
+const loadABI = () => {
+  try {
+    const artifactPath = path.resolve(__dirname, config.abiPaths.myToken);
+    return JSON.parse(fs.readFileSync(artifactPath)).abi;
+  } catch (error) {
+    console.error('❌ 加载ABI失败:', error.message);
+    process.exit(1);
+  }
+};
+
+const abi = loadABI();
+
+// 4. 创建合约实例
+const contract = new ethers.Contract(config.contractAddress, abi, signer);
+
+// 5. 验证合约连接
+async function verifyContract() {
+  try {
+    console.log('🔍 验证合约连接...');
+    
+    // 检查合约地址是否有代码
+    const code = await provider.getCode(config.contractAddress);
+    if (code === '0x') {
+      throw new Error('合约地址没有代码 - 可能未部署');
+    }
+    
+    // 测试调用一个简单方法
+    try {
+      const owner = await contract.owner();
+      console.log(`✅ 合约验证成功 - 所有者: ${owner}`);
+      return true;
+    } catch (e) {
+      console.log('⚠️ owner方法不可用，尝试其他方法...');
+    }
+    
+    // 尝试调用其他方法
+    try {
+      const name = await contract.name();
+      console.log(`✅ 合约验证成功 - 代币名称: ${name}`);
+      return true;
+    } catch (e) {
+      throw new Error('无法调用任何合约方法 - ABI可能不匹配');
+    }
+  } catch (error) {
+    console.error('❌ 合约验证失败:', error.message);
+    process.exit(1);
+  }
+}
+
+// 6. 改进的nonce管理器
+const nonceManager = {
+  cache: {},
+  
+  async getNonce(address) {
+    if (this.cache[address] === undefined) {
+      this.cache[address] = await provider.getTransactionCount(address, 'pending');
+    }
+    return this.cache[address]++;
+  },
+  
+  reset(address) {
+    delete this.cache[address];
+  }
+};
+
+// 7. 数据库操作函数
+function connectToDatabase() {
+  const dbPath = path.resolve(__dirname, '../server/data/users.db');
+  console.log(`🔗 连接到数据库: ${dbPath}`);
+  
+  return new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, (err) => {
+    if (err) {
+      console.error('❌ 无法打开数据库:', err.message);
+      throw err;
+    }
+    console.log('✅ 数据库连接成功');
+  });
+}
+
+async function getDatabaseRecords(db) {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT hash FROM image_history WHERE is_deleted = 0", [], (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows.map(row => row.hash));
+    });
+  });
+}
+
+// 8. 核心同步逻辑
+async function addMissingHash(hash) {
+  try {
+    // 确保哈希格式正确
+    const formattedHash = hash.startsWith('0x') ? hash : `0x${hash}`;
+    
+    if (formattedHash.length !== 66) {
+      throw new Error(`无效哈希长度: ${formattedHash.length} (应为66字符)`);
+    }
+    
+    console.log(`⚠️ 添加缺失哈希: ${formattedHash.slice(0, 12)}...`);
+    
+    // 获取nonce
+    const nonce = await nonceManager.getNonce(signer.address);
+    
+    // 发送交易
+    const tx = await contract.uploadImageHash(formattedHash, {
+      nonce,
+      gasLimit: 500000
+    });
+    
+    const receipt = await tx.wait();
+    console.log(`✅ 交易已确认 - 区块: ${receipt.blockNumber}, 哈希: ${receipt.hash}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ 添加失败: ${error.message}`);
+    
+    // 出错时重置nonce
+    nonceManager.reset(signer.address);
+    
+    return false;
+  }
+}
+
+// 9. 主同步函数
+async function syncState() {
+  console.log('🔄 开始同步状态...');
+  
+  // 验证合约连接
+  await verifyContract();
+  
+  const db = connectToDatabase();
+  
+  try {
+    // 获取数据库记录
+    const dbRecords = await getDatabaseRecords(db);
+    console.log(`- 数据库记录数量: ${dbRecords.length}`);
+    
+    if (dbRecords.length === 0) {
+      console.log('✅ 无需同步 - 数据库为空');
+      return;
+    }
+    
+    // 收集需要同步的哈希
+    const toSync = [];
+    for (const hash of dbRecords) {
+      toSync.push(hash);
+    }
+    
+    console.log(`- 需要同步的哈希数量: ${toSync.length}`);
+    
+    // 同步所有哈希
+    const results = [];
+    for (const hash of toSync) {
+      const success = await addMissingHash(hash);
+      results.push({ hash, success });
+      
+      // 添加延迟
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // 统计结果
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.length - successCount;
+    
+    console.log('\n✅ 同步完成');
+    console.log(`- 成功: ${successCount}`);
+    console.log(`- 失败: ${failureCount}`);
+    
+    if (failureCount > 0) {
+      console.log('\n❌ 失败哈希:');
+      results.filter(r => !r.success).forEach(r => {
+        console.log(`  - ${r.hash}`);
+      });
+    }
+  } catch (error) {
+    console.error('❌ 同步过程出错:', error.message);
+  } finally {
+    db.close();
+  }
+}
+
+// 10. 执行同步
+syncState().catch(err => {
+  console.error('🔥 未捕获错误:', err.message);
+  process.exit(1);
+});

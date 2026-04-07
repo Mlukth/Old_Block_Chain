@@ -1,0 +1,99 @@
+// Modified by CodeBatchUpdater at 2025-08-06 13:55:10
+
+// 源代码文件地址: d:\hardhat_resave\my-hardhat-project3\scripts\deploy.js
+const fs = require('fs');
+const path = require('path');
+const { ethers } = require("hardhat");
+
+// 更新配置文件而不覆盖其他设置
+function updateConfig(newValues) {
+  const configPath = path.join(__dirname, 'config.js');
+  
+  // 保留现有配置
+  const currentConfig = require(configPath);
+  
+  // 合并新值
+  const updatedConfig = {
+    ...currentConfig,
+    ...newValues
+  };
+  
+  // 写入更新
+  const configContent = `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`;
+  fs.writeFileSync(configPath, configContent);
+  
+  console.log('🔄 配置文件已更新');
+}
+
+async function main() {
+  console.log('📂 当前工作目录:', process.cwd());
+  console.log('🔍 配置文件路径:', path.resolve(__dirname, 'config.js'));
+  
+  const [deployer] = await ethers.getSigners();
+  console.log("🔑 部署账户:", deployer.address);
+
+  // 部署 MyToken 合约
+  console.log("🚀 开始部署 MyToken 合约...");
+  const MyToken = await ethers.getContractFactory("MyToken");
+  const myToken = await MyToken.deploy();
+  await myToken.waitForDeployment();
+  const myTokenAddress = await myToken.getAddress();
+  
+  // 获取部署交易哈希
+  const deploymentTransaction = myToken.deploymentTransaction();
+  const transactionHash = deploymentTransaction ? deploymentTransaction.hash : "N/A";
+
+  // 部署 Lock 合约
+  console.log("🚀 开始部署 Lock 合约...");
+  const Lock = await ethers.getContractFactory("Lock");
+  const lock = await Lock.deploy(Math.floor(Date.now() / 1000) + 3600);
+  await lock.waitForDeployment();
+  const lockAddress = await lock.getAddress();
+
+  // 在部署成功后
+  console.log("✅ 合约部署成功!");
+  console.log("📜 MyToken 地址:", myTokenAddress);
+
+  // 只更新需要改变的字段
+  updateConfig({
+    contractAddress: myTokenAddress,
+    lockAddress: lockAddress
+  });
+
+  // 保存部署记录
+  const deploymentsDir = path.join(__dirname, '../deployments/localhost');
+  if (!fs.existsSync(deploymentsDir)) {
+    fs.mkdirSync(deploymentsDir, { recursive: true });
+  }
+
+  // 保存 MyToken 部署信息
+  fs.writeFileSync(
+    path.join(deploymentsDir, 'MyToken.json'),
+    JSON.stringify({
+      address: myTokenAddress,
+      transactionHash: transactionHash,
+      deployer: deployer.address,
+      timestamp: new Date().toISOString()
+    }, null, 2)
+  );
+
+  // 保存 Lock 部署信息
+  fs.writeFileSync(
+    path.join(deploymentsDir, 'Lock.json'),
+    JSON.stringify({
+      address: lockAddress,
+      transactionHash: lock.deploymentTransaction().hash,
+      deployer: deployer.address,
+      timestamp: new Date().toISOString()
+    }, null, 2)
+  );
+
+  console.log('📝 部署记录已保存');
+  
+  return { myTokenAddress, lockAddress };
+}
+
+main().catch((error) => {
+  console.error("❌ 部署失败:", error);
+  process.exit(1);
+});

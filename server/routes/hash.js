@@ -1,0 +1,359 @@
+// Modified by CodeBatchUpdater at 2025-08-05 13:44:18
+
+// server/routes/hash.js
+
+import express from 'express';
+import { runScript } from '../utils/scriptExecutor.js';
+import { IMAGE_STORAGE_PATH, IMAGE_BASE_URL } from '../config.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import { authenticateToken } from '../middleware/auth.js';
+import multer from 'multer';
+import fs from 'fs';
+import { exec } from 'child_process';
+import { calculateImageHash, isValidBytes32 } from '../utils/hashCalculator.js';
+import db from '../db/index.js';
+import { testImageStorage } from '../debug/imageStorageDebug.js';
+import { calculateHashWithStorage } from '../utils/hashCalculator.js';
+import { ethers } from 'ethers';
+import { BLOCKCHAIN_CONFIG } from '../config.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const router = express.Router();
+
+// 在保存图片的代码中使用统一路径
+const saveImage = (fileBuffer, hash) => {
+  const cleanHash = hash.startsWith('0x') ? hash.substring(2) : hash;
+  const filename = `${cleanHash}.jpg`;
+  const imagePath = path.join(IMAGE_STORAGE_PATH, filename);
+  
+  fs.writeFileSync(imagePath, fileBuffer);
+  return imagePath;
+};
+
+// 封装异步版本的exec
+const execAsync = (command, options) => {
+  return new Promise((resolve, reject) => {
+    exec(command, options, (error, stdout, stderr) => {
+      if (error) reject(error);
+      else if (stderr) reject(new Error(stderr));
+      else resolve({ stdout, stderr });
+    });
+  });
+};
+
+// 确保已经配置了 multer
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
+  }
+});
+
+// 添加批量上传处理
+router.post('/batch-upload', async (req, res) => {
+  try {
+    const files = req.files?.images;
+    if (!files || !Array.isArray(files)) {
+      return res.status(400).json({ error: '未提供文件' });
+    }
+
+    const results = [];
+    
+    for (const file of files) {
+      try {
+        // 计算哈希
+        const hash = calculateImageHash(file.buffer);
+        
+        // 保存文件
+        const filename = `${hash.replace('0x', '')}.jpg`;
+        const filePath = path.join(IMAGE_STORAGE_PATH, filename);
+        fs.writeFileSync(filePath, file.buffer);
+        
+        // 添加到数据库
+        const blockHeight = await uploadToBlockchain(hash);
+        addImageRecord(hash, filePath, blockHeight);
+        
+        results.push({
+          filename: file.originalname,
+          hash,
+          success: true,
+          imageUrl: `/api/images/${filename}`
+        });
+      } catch (error) {
+        results.push({
+          filename: file.originalname,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+    
+    res.json({ success: true, results });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: '批量上传失败: ' + error.message 
+    });
+  }
+});
+
+// 计算图片哈希 - 移除身份验证中间件
+router.post('/calculate-hash', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: '未上传文件' });
+    }
+
+    const fileBuffer = req.file.buffer;
+    const hash = calculateImageHash(fileBuffer);
+    console.log(`✅ 计算哈希: ${hash.substring(0, 20)}... (长度: ${hash.length})`);
+    
+    res.json({ success: true, hash: hash });
+  } catch (error) {
+    console.error('计算哈希失败:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
+});
+
+// 修改 /upload-to-blockchain 路由
+router.post('/upload-to-blockchain', upload.single('image'), async (req, res) => {
+  try {
+    const { hash } = req.body;
+    
+    const projectRoot = path.resolve(__dirname, '../..');
+    const scriptPath = path.join(projectRoot, 'scripts', 'uploadImage.js');
+    
+    const { stdout, stderr } = await execAsync(`node "${scriptPath}" "${hash}"`, {
+      cwd: projectRoot
+    });
+    
+    let blockNumber = null;
+    const blockNumberMatch = stdout.match(/blockNumber: (\d+)/);
+    if (blockNumberMatch) {
+      blockNumber = parseInt(blockNumberMatch[1]);
+    } else {
+      console.warn('⚠️ 未找到区块高度信息');
+    }
+    
+    const cleanHash = hash.startsWith('0x') ? hash.substring(2) : hash;
+    const imagePath = path.join(IMAGE_STORAGE_PATH, `${cleanHash}.jpg`);
+    fs.writeFileSync(imagePath, req.file.buffer);
+    
+    await db.addImageRecord(hash, imagePath, blockNumber);
+    
+    res.json({
+      success: true,
+      imageUrl: `${IMAGE_BASE_URL}/${cleanHash}.jpg`,
+      blockHeight: blockNumber
+    });
+  } catch (error) {
+    console.error("❌ 上传到区块链失败:", error);
+    res.status(500).json({ 
+      error: error.message || '上传失败',
+      stdout: error.stdout,
+      stderr: error.stderr
+    });
+  }
+});
+
+// 添加哈希验证接口（修复路径问题）
+router.post('/verify-hash', authenticateToken, async (req, res) => {
+  try {
+    const { hash } = req.body;
+    if (!hash) return res.status(400).json({ error: '缺少哈希参数' });
+    
+    const result = await runScript('verifyWithHistory.js', [hash]);
+    
+    const isVerified = result.output.includes('✅ 哈希已存在于链上');
+    const message = isVerified 
+      ? '哈希已在链上存在' 
+      : '哈希未在链上找到';
+    
+    res.json({ 
+      success: true, 
+      isVerified,
+      message
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: `验证失败: ${error.message}`,
+      details: error.response?.data?.error || ''
+    });
+  }
+});
+
+// 修改 /check-existence 路由
+router.post('/check-existence', authenticateToken, async (req, res) => {
+  try {
+    const { hash } = req.body;
+    if (!hash) return res.status(400).json({ error: '缺少哈希参数' });
+    
+    // 确保哈希格式正确
+    const formattedHash = hash.startsWith('0x') ? hash : `0x${hash}`;
+    
+    // 直接使用合约方法验证
+    const provider = new ethers.JsonRpcProvider(BLOCKCHAIN_CONFIG.RPC_URL);
+    const contract = new ethers.Contract(
+      BLOCKCHAIN_CONFIG.CONTRACT_ADDRESS, 
+      ['function isImageHashActive(bytes32) view returns (bool)'],
+      provider
+    );
+    
+    // 添加合约存在检查
+    const code = await provider.getCode(BLOCKCHAIN_CONFIG.CONTRACT_ADDRESS);
+    if (code === '0x') {
+      return res.status(500).json({ error: '合约不存在，请先部署' });
+    }
+    
+    const exists = await contract.isImageHashActive(formattedHash);
+    res.json({ exists });
+  } catch (error) {
+    console.error('检查哈希存在性失败:', error);
+    res.status(500).json({ 
+      error: '服务器内部错误',
+      details: error.message
+    });
+  }
+});
+
+// 修改上传路由
+router.post('/upload', upload.single('image'), async (req, res) => {
+    try {
+        const hash = await calculateHashWithStorage(req.file);
+    } catch (error) {
+    }
+});
+
+// 添加删除路由
+router.delete('/:hash', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        
+        await db.deleteImageRecord(hash);
+        
+        res.json({ success: true });
+    } catch (error) {
+    }
+});
+
+// 添加获取历史记录路由
+router.get('/history', async (req, res) => {
+    try {
+        const history = db.getAllImageRecords();
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
+});
+
+// 删除链上哈希路由
+router.delete('/delete-hash/:hash', async (req, res) => {
+  const { hash } = req.params;
+  
+  try {
+    const success = await db.deleteImageRecord(hash);
+    
+    if (success) {
+      res.json({ success: true, message: '记录删除成功' });
+    } else {
+      res.status(404).json({ success: false, error: '未找到记录' });
+    }
+  } catch (error) {
+    console.error('删除失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '删除失败',
+      details: error.message
+    });
+  }
+});
+
+// 获取哈希列表（受保护路由）
+router.get('/list', authenticateToken, async (req, res) => {
+  try {
+    const hashes = [
+      { id: 1, hash: 'QmHash1234567890', timestamp: '2023-01-01T12:00:00Z' },
+      { id: 2, hash: 'QmAnotherHash', timestamp: '2023-01-02T13:30:00Z' },
+    ];
+    
+    res.json({
+      success: true,
+      data: hashes
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '获取哈希列表失败',
+      error: error.message
+    });
+  }
+});
+
+// 受保护的示例路由
+router.get('/protected', authenticateToken, (req, res) => {
+  res.json({ 
+    success: true, 
+    message: '这是受保护的哈希路由',
+    user: req.user
+  });
+});
+
+// 公共信息路由
+router.get('/public-info', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: '这是哈希模块的公共信息' 
+  });
+});
+
+// 添加调试路由
+router.get('/debug/image-storage', async (req, res) => {
+  try {
+    const result = await testImageStorage();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 添加认证中间件到调试路由
+router.get('/debug/storage-info', authenticateToken, (req, res) => {
+  const storageDir = IMAGE_STORAGE_PATH;
+  const exists = fs.existsSync(storageDir);
+  
+  let files = [];
+  if (exists) {
+    files = fs.readdirSync(storageDir).map(file => {
+      const filePath = path.join(storageDir, file);
+      return {
+        name: file,
+        path: filePath,
+        size: fs.statSync(filePath).size,
+        created: fs.statSync(filePath).birthtime
+      };
+    });
+  }
+  
+  res.json({
+    storageDir,
+    exists,
+    fileCount: files.length,
+    files
+  });
+});
+
+// 在 server/routes/hash.js 中添加调试端点
+router.get('/debug/paths', (req, res) => {
+  res.json({
+    storagePath: IMAGE_STORAGE_PATH,
+    baseUrl: IMAGE_BASE_URL,
+    files: fs.readdirSync(IMAGE_STORAGE_PATH)
+  });
+});
+
+export default router;

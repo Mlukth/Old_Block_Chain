@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片上链与历史记录测试</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --dark: #212529;
+            --light: #f8f9fa;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1, h2, h3 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .test-case {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(50, 50, 60, 0.6);
+            transition: all 0.3s ease;
+        }
+        
+        .test-case:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .test-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .test-title h3 {
+            margin-bottom: 0;
+            flex-grow: 1;
+        }
+        
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .pending {
+            background-color: #ffb703;
+            color: #000;
+        }
+        
+        .success {
+            background-color: #2ec4b6;
+            color: #000;
+        }
+        
+        .failure {
+            background-color: #e71d36;
+            color: #fff;
+        }
+        
+        .test-steps {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .test-steps li {
+            margin-bottom: 8px;
+        }
+        
+        .result {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        .btn-run-all {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            margin-top: 20px;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+        }
+        
+        .visualization {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .flow-diagram {
+            background: rgba(40, 40, 50, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .flow-step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .flow-box {
+            background: rgba(70, 70, 90, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            width: 200px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .flow-arrow {
+            font-size: 24px;
+            margin: 0 15px;
+            color: var(--success);
+        }
+        
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .thumbnail {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .thumbnail .hash {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 0.6rem;
+            padding: 3px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .debug-info {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .debug-info h3 {
+            margin-bottom: 10px;
+        }
+        
+        .debug-item {
+            margin-bottom: 10px;
+        }
+        
+        .debug-label {
+            font-weight: bold;
+            color: var(--success);
+            margin-right: 10px;
+        }
+        
+        .log {
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h1>图片上链与历史记录测试</h1>
+            
+            <div class="test-case">
+                <div class="test-title">
+                    <h3>测试 1: 图片上传与哈希计算</h3>
+                    <span class="status pending">待测试</span>
+                </div>
+                <ul class="test-steps">
+                    <li>选择测试图片</li>
+                    <li>计算图片哈希值</li>
+                    <li>验证哈希格式</li>
+                </ul>
+                <div class="result" id="result1">等待测试...</div>
+                <button class="btn" onclick="runTest(1)">运行测试</button>
+            </div>
+            
+            <div class="test-case">
+                <div class="test-title">
+                    <h3>测试 2: 哈希上链</h3>
+                    <span class="status pending">待测试</span>
+                </div>
+                <ul class="test-steps">
+                    <li>上传哈希到区块链</li>
+                    <li>保存图片到存储目录</li>
+                    <li>添加记录到数据库</li>
+                </ul>
+                <div class="result" id="result2">等待测试...</div>
+                <button class="btn" onclick="runTest(2)">运行测试</button>
+            </div>
+            
+            <div class="test-case">
+                <div class="test-title">
+                    <h3>测试 3: 历史记录查询</h3>
+                    <span class="status pending">待测试</span>
+                </div>
+                <ul class="test-steps">
+                    <li>查询历史记录API</li>
+                    <li>验证返回的数据结构</li>
+                    <li>检查图片URL格式</li>
+                </ul>
+                <div class="result" id="result3">等待测试...</div>
+                <button class="btn" onclick="runTest(3)">运行测试</button>
+            </div>
+            
+            <div class="test-case">
+                <div class="test-title">
+                    <h3>测试 4: 缩略图显示</h3>
+                    <span class="status pending">待测试</span>
+                </div>
+                <ul class="test-steps">
+                    <li>加载历史记录中的图片</li>
+                    <li>验证图片访问性</li>
+                    <li>检查图片内容</li>
+                </ul>
+                <div class="result" id="result4">等待测试...</div>
+                <button class="btn" onclick="runTest(4)">运行测试</button>
+            </div>
+            
+            <button class="btn btn-run-all" onclick="runAllTests()">运行所有测试</button>
+        </div>
+        
+        <div class="panel visualization">
+            <h2>流程可视化</h2>
+            
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-box">选择图片</div>
+                    <div class="flow-arrow">→</div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="flow-box">计算哈希</div>
+                    <div class="flow-arrow">→</div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="flow-box">上传到区块链</div>
+                    <div class="flow-arrow">→</div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="flow-box">保存图片文件</div>
+                    <div class="flow-arrow">→</div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="flow-box">添加数据库记录</div>
+                    <div class="flow-arrow">→</div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="flow-box">查询历史记录</div>
+                    <div class="flow-arrow">→</div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="flow-box">显示缩略图</div>
+                </div>
+            </div>
+            
+            <h3>测试图片预览</h3>
+            <div class="image-preview" id="imagePreview">
+                <!-- 图片预览将动态添加 -->
+            </div>
+            
+            <div class="debug-info">
+                <h3>调试信息</h3>
+                <div class="debug-item">
+                    <span class="debug-label">图片存储路径:</span>
+                    <span id="storagePath">D:\hardhat_resave\my-hardhat-project3\server\image_storage</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">API地址:</span>
+                    <span>http://localhost:3002/api</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">测试日志:</span>
+                    <div class="log" id="testLog">等待测试开始...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 测试数据
+        const testImages = [
+            { name: "风景图", url: "https://picsum.photos/id/1015/200/200" },
+            { name: "城市景观", url: "https://picsum.photos/id/1039/200/200" },
+            { name: "自然风光", url: "https://picsum.photos/id/1040/200/200" }
+        ];
+        
+        // 测试状态
+        const testStatus = {
+            1: "pending",
+            2: "pending",
+            3: "pending",
+            4: "pending"
+        };
+        
+        // 测试结果
+        const testResults = {
+            1: null,
+            2: null,
+            3: null,
+            4: null
+        };
+        
+        // 初始化图片预览
+        function initImagePreview() {
+            const previewContainer = document.getElementById('imagePreview');
+            previewContainer.innerHTML = '';
+            
+            testImages.forEach((img, index) => {
+                const thumbnail = document.createElement('div');
+                thumbnail.className = 'thumbnail';
+                thumbnail.innerHTML = `
+                    <img src="${img.url}" alt="${img.name}">
+                    <div class="hash">测试图片 ${index+1}</div>
+                `;
+                previewContainer.appendChild(thumbnail);
+            });
+        }
+        
+        // 更新测试状态显示
+        function updateTestStatus(testId, status, result) {
+            const statusElement = document.querySelector(`.test-case:nth-child(${testId}) .status`);
+            const resultElement = document.getElementById(`result${testId}`);
+            
+            statusElement.textContent = status === "success" ? "通过" : 
+                                        status === "failure" ? "失败" : "测试中";
+            statusElement.className = `status ${status}`;
+            
+            if (result) {
+                testResults[testId] = result;
+                resultElement.textContent = result;
+            }
+            
+            testStatus[testId] = status;
+        }
+        
+        // 添加日志
+        function addLog(message) {
+            const logElement = document.getElementById('testLog');
+            logElement.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // 模拟API调用
+        function mockApiCall(endpoint, data) {
+            return new Promise((resolve) => {
+                const delay = Math.random() * 1000 + 500; // 500-1500ms延迟
+                
+                setTimeout(() => {
+                    let response = {};
+                    
+                    // 模拟不同API的响应
+                    if (endpoint === '/hash/calculate-hash') {
+                        // 生成伪哈希 (64字符十六进制)
+                        const hash = Array.from({length: 64}, () => 
+                            Math.floor(Math.random() * 16).toString(16)).join('');
+                        response = { success: true, hash: `0x${hash}` };
+                    }
+                    else if (endpoint === '/hash/upload-to-blockchain') {
+                        const blockHeight = Math.floor(Math.random() * 10000);
+                        response = { 
+                            success: true, 
+                            message: '哈希已成功上传到区块链',
+                            blockHeight,
+                            imageUrl: `/images/${data.hash.substring(2)}.jpg`
+                        };
+                    }
+                    else if (endpoint === '/history') {
+                        // 生成伪历史记录
+                        response = [
+                            {
+                                id: Date.now(),
+                                hash: data.hash,
+                                filename: `test-image-${Date.now()}.jpg`,
+                                status: 'confirmed',
+                                timestamp: new Date().toISOString(),
+                                blockHeight: Math.floor(Math.random() * 10000),
+                                imageUrl: `/images/${data.hash.substring(2)}.jpg`
+                            }
+                        ];
+                    }
+                    
+                    resolve(response);
+                }, delay);
+            });
+        }
+        
+        // 运行测试1: 图片上传与哈希计算
+        async function runTest1() {
+            updateTestStatus(1, "pending", "开始测试...");
+            addLog("测试1: 开始图片上传与哈希计算测试");
+            
+            try {
+                // 模拟文件上传
+                addLog("模拟图片上传...");
+                const image = testImages[0];
+                
+                // 模拟调用API计算哈希
+                addLog("调用API计算哈希值...");
+                const response = await mockApiCall('/hash/calculate-hash', {});
+                
+                // 验证响应
+                if (response.success && response.hash && response.hash.startsWith('0x') && response.hash.length === 66) {
+                    updateTestStatus(1, "success", `测试通过！\n生成哈希: ${response.hash}`);
+                    addLog(`测试1通过: 成功生成哈希 ${response.hash}`);
+                    return response.hash;
+                } else {
+                    updateTestStatus(1, "failure", `测试失败: 无效的哈希格式\n${JSON.stringify(response, null, 2)}`);
+                    addLog("测试1失败: 无效的哈希格式");
+                    return null;
+                }
+            } catch (error) {
+                updateTestStatus(1, "failure", `测试失败: ${error.message}`);
+                addLog(`测试1失败: ${error.message}`);
+                return null;
+            }
+        }
+        
+        // 运行测试2: 哈希上链
+        async function runTest2(hash) {
+            if (!hash) {
+                updateTestStatus(2, "failure", "测试失败: 缺少有效哈希");
+                addLog("测试2失败: 缺少有效哈希");
+                return null;
+            }
+            
+            updateTestStatus(2, "pending", "开始测试...");
+            addLog("测试2: 开始哈希上链测试");
+            
+            try {
+                // 模拟上传到区块链
+                addLog(`上传哈希 ${hash} 到区块链...`);
+                const response = await mockApiCall('/hash/upload-to-blockchain', { hash });
+                
+                // 验证响应
+                if (response.success && response.blockHeight && response.imageUrl) {
+                    updateTestStatus(2, "success", `测试通过！\n区块高度: ${response.blockHeight}\n图片URL: ${response.imageUrl}`);
+                    addLog(`测试2通过: 成功上传到区块链`);
+                    return response;
+                } else {
+                    updateTestStatus(2, "failure", `测试失败: 上链失败\n${JSON.stringify(response, null, 2)}`);
+                    addLog("测试2失败: 上链失败");
+                    return null;
+                }
+            } catch (error) {
+                updateTestStatus(2, "failure", `测试失败: ${error.message}`);
+                addLog(`测试2失败: ${error.message}`);
+                return null;
+            }
+        }
+        
+        // 运行测试3: 历史记录查询
+        async function runTest3(hash) {
+            if (!hash) {
+                updateTestStatus(3, "failure", "测试失败: 缺少有效哈希");
+                addLog("测试3失败: 缺少有效哈希");
+                return null;
+            }
+            
+            updateTestStatus(3, "pending", "开始测试...");
+            addLog("测试3: 开始历史记录查询测试");
+            
+            try {
+                // 模拟查询历史记录
+                addLog("查询历史记录API...");
+                const response = await mockApiCall('/history', { hash });
+                
+                // 验证响应
+                if (Array.isArray(response) && response.length > 0) {
+                    const record = response[0];
+                    
+                    // 验证数据结构
+                    const isValidRecord = record.id && record.hash && record.imageUrl;
+                    const validImageUrl = record.imageUrl === `/images/${hash.substring(2)}.jpg`;
+                    
+                    if (isValidRecord && validImageUrl) {
+                        updateTestStatus(3, "success", `测试通过！\n找到记录: ${record.id}\n图片URL: ${record.imageUrl}`);
+                        addLog(`测试3通过: 成功获取历史记录`);
+                        return record;
+                    } else {
+                        const errors = [];
+                        if (!isValidRecord) errors.push("无效的数据结构");
+                        if (!validImageUrl) errors.push("图片URL格式错误");
+                        
+                        updateTestStatus(3, "failure", `测试失败: ${errors.join(', ')}\n${JSON.stringify(record, null, 2)}`);
+                        addLog(`测试3失败: ${errors.join(', ')}`);
+                        return null;
+                    }
+                } else {
+                    updateTestStatus(3, "failure", `测试失败: 未找到历史记录\n${JSON.stringify(response, null, 2)}`);
+                    addLog("测试3失败: 未找到历史记录");
+                    return null;
+                }
+            } catch (error) {
+                updateTestStatus(3, "failure", `测试失败: ${error.message}`);
+                addLog(`测试3失败: ${error.message}`);
+                return null;
+            }
+        }
+        
+        // 运行测试4: 缩略图显示
+        async function runTest4(record) {
+            if (!record || !record.imageUrl) {
+                updateTestStatus(4, "failure", "测试失败: 缺少有效记录");
+                addLog("测试4失败: 缺少有效记录");
+                return;
+            }
+            
+            updateTestStatus(4, "pending", "开始测试...");
+            addLog("测试4: 开始缩略图显示测试");
+            
+            try {
+                // 模拟加载图片
+                addLog(`尝试加载图片: ${record.imageUrl}`);
+                
+                // 在实际应用中，这里会是一个真实的图片请求
+                // 这里我们模拟一个图片加载过程
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // 模拟图片加载成功
+                updateTestStatus(4, "success", `测试通过！\n成功加载缩略图`);
+                addLog("测试4通过: 成功加载缩略图");
+            } catch (error) {
+                updateTestStatus(4, "failure", `测试失败: 无法加载图片\n${error.message}`);
+                addLog(`测试4失败: 无法加载图片`);
+            }
+        }
+        
+        // 运行单个测试
+        async function runTest(testId) {
+            addLog(`===== 开始测试 ${testId} =====`);
+            
+            if (testId === 1) {
+                const hash = await runTest1();
+                if (hash) {
+                    // 存储哈希供后续测试使用
+                    window.currentHash = hash;
+                }
+            }
+            else if (testId === 2) {
+                const response = await runTest2(window.currentHash);
+                if (response) {
+                    window.uploadResponse = response;
+                }
+            }
+            else if (testId === 3) {
+                const record = await runTest3(window.currentHash);
+                if (record) {
+                    window.historyRecord = record;
+                }
+            }
+            else if (testId === 4) {
+                await runTest4(window.historyRecord);
+            }
+        }
+        
+        // 运行所有测试
+        async function runAllTests() {
+            addLog("===== 开始所有测试 =====");
+            
+            // 重置状态
+            for (let i = 1; i <= 4; i++) {
+                updateTestStatus(i, "pending", "等待测试...");
+            }
+            
+            // 按顺序运行测试
+            await runTest(1);
+            await runTest(2);
+            await runTest(3);
+            await runTest(4);
+            
+            addLog("===== 所有测试完成 =====");
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            initImagePreview();
+        };
+    </script>
+</body>
+</html>

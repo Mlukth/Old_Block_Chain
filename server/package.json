@@ -1,0 +1,36 @@
+{
+  "name": "my-hardhat-project",
+  "version": "1.0.0",
+  "type": "module",
+  "imports": {
+    "#custom-resolver": {
+      "default": "./index.js"
+    }
+  },
+  "main": "index.js",
+  "scripts": {
+    "convert-server": "node convert-server-to-esm.mjs",
+    "start": "node server/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^12.2.0",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "fs-extra": "^11.3.1",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "web3": "^4.11.0",
+    "ws": "^8.18.3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

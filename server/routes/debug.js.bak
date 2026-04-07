@@ -1,0 +1,85 @@
+// Modified by CodeBatchUpdater at 2025-07-22 22:47:48
+
+// server/routes/debug.js
+
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { IMAGE_STORAGE_PATH } from '../config.js';
+import db from '../db/index.js';
+
+const router = express.Router();
+
+// 无需认证的存储信息路由
+router.get('/storage', (req, res) => {
+  try {
+    if (!fs.existsSync(IMAGE_STORAGE_PATH)) {
+      return res.json({
+        storagePath: IMAGE_STORAGE_PATH,
+        exists: false,
+        message: "目录不存在"
+      });
+    }
+    
+    const files = fs.readdirSync(IMAGE_STORAGE_PATH);
+    const fileInfo = files.map(file => ({
+      name: file,
+      size: fs.statSync(path.join(IMAGE_STORAGE_PATH, file)).size,
+      url: `/images/${file}`
+    }));
+    
+    res.json({
+      storagePath: IMAGE_STORAGE_PATH,
+      exists: true,
+      fileCount: files.length,
+      files: fileInfo
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message,
+      storagePath: IMAGE_STORAGE_PATH
+    });
+  }
+});
+
+router.get('/image-consistency', (req, res) => {
+  db.all('SELECT * FROM image_history', async (err, dbRecords) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    const files = fs.readdirSync(IMAGE_STORAGE_PATH);
+    const fileMap = {};
+    files.forEach(file => {
+      const hash = file.replace('.jpg', '');
+      fileMap[hash] = file;
+    });
+    
+    const results = dbRecords.map(record => {
+      // 数据库中的哈希值（带0x前缀）
+      const dbHash = record.hash;
+      // 对应的文件名（64字符）
+      const expectedFileName = dbHash.startsWith('0x') 
+        ? dbHash.substring(2) + '.jpg'
+        : dbHash + '.jpg';
+      
+      const fileExists = fs.existsSync(path.join(IMAGE_STORAGE_PATH, expectedFileName));
+      
+      return {
+        id: record.id,
+        dbHash: dbHash,
+        expectedFile: expectedFileName,
+        actualFile: fileMap[dbHash.replace(/^0x/, '')] || '未找到',
+        fileExists: fileExists,
+        status: fileExists ? '匹配' : '不匹配'
+      };
+    });
+    
+    res.json({
+      storagePath: IMAGE_STORAGE_PATH,
+      totalRecords: dbRecords.length,
+      matchedRecords: results.filter(r => r.fileExists).length,
+      results
+    });
+  });
+});
+
+export default router;
