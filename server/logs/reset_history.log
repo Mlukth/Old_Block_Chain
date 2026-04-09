@@ -1,1 +1,2 @@
 {"timestamp":"2026-04-07T16:23:31.398Z","ip":"::1","user":"admin","result":{"success":true,"message":"已完全重置环境","stats":{"deletedRecords":6,"deletedFiles":1,"deletedDirectories":0}}}
+{"timestamp":"2026-04-09T12:22:26.781Z","ip":"::ffff:127.0.0.1","user":"admin","result":{"success":true,"message":"已完全重置环境","stats":{"deletedRecords":2,"deletedFiles":2,"deletedDirectories":0}}}

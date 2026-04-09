@@ -8,15 +8,15 @@ const { exec } = require('child_process');
 // 配置参数
 const CONFIG = {
   // 服务启动路径
-  HARDHAT_PATH: 'D:\\hardhat_resave\\my-hardhat-project3',
-  SERVER_PATH: 'D:\\hardhat_resave\\my-hardhat-project3\\server',
-  WEB_PATH: 'D:\\hardhat_resave\\my-hardhat-project3\\web',
+  HARDHAT_PATH: path.join(__dirname, ''),
+  SERVER_PATH: path.join(__dirname, '/server'),
+  WEB_PATH: path.join(__dirname, '/web'),
   
   // 监听目录
   WATCH_DIR: 'D:\\hardhat_resave\\UU',
   
   // 批量上传脚本路径
-  BATCH_UPLOAD_SCRIPT: path.join('D:\\hardhat_resave\\my-hardhat-project3', 'scripts', 'batchUpload.js'),
+  BATCH_UPLOAD_SCRIPT: path.join(path.join(__dirname, ''), 'scripts', 'batchUpload.js'),
   
   // 监听参数
   IDLE_TIMEOUT: 10000, // 10秒空闲时间

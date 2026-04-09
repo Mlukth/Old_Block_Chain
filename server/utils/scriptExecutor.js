@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 function runScript(scriptName, args = []) {
   return new Promise((resolve) => {
     // 获取项目根目录（硬编码确保正确）
-    const projectRoot = path.resolve('D:/hardhat_resave/my-hardhat-project3');
+    const projectRoot = path.resolve(path.join(__dirname, '../../'));
     
     // 确保脚本路径正确
     const scriptPath = path.join(projectRoot, 'scripts', scriptName);

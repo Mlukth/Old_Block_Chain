@@ -1,49 +1,39 @@
-/**
- * 验证脚本：S6 数据流验证与重置脚本
- */
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const fs = require('fs');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-console.log('='.repeat(60));
-console.log('🔍 验证 S6：数据流验证与重置脚本');
-console.log('='.repeat(60));
-
-const scripts = [
-  'runAllTests.js',
-  'testFullReset.js',
-  'validateDataFlow.js',
-  'verify_all.js',
-  'verify_chain_state.js',
-  'verify_state_consistency.js'
+const PROJECT_ROOT = __dirname;
+const filesToFix = [
+    'auto-process.js',
+    'server/utils/scriptExecutor.js'
 ];
 
-scripts.forEach(s => {
-  const fullPath = path.join(__dirname, 'scripts', s);
-  console.log(`${s}: ${fs.existsSync(fullPath) ? '✅' : '❌'}`);
-});
+function undoFix(filePath) {
+    const fullPath = path.join(PROJECT_ROOT, filePath);
+    if (!fs.existsSync(fullPath)) {
+        console.log(`⚠️ 文件不存在: ${fullPath}`);
+        return;
+    }
 
-const contractManagerPath = path.join(__dirname, 'server/utils/contractManager.js');
-console.log(`contractManager.js: ${fs.existsSync(contractManagerPath) ? '✅' : '❌'}`);
+    let content = fs.readFileSync(fullPath, 'utf8');
 
-console.log('\n区块链依赖检查:');
-const checkDep = (file) => {
-  if (!fs.existsSync(file)) return '❌ 文件不存在';
-  const content = fs.readFileSync(file, 'utf-8');
-  const deps = [];
-  if (/ethers/.test(content)) deps.push('ethers');
-  if (/hardhat/.test(content)) deps.push('hardhat');
-  if (/level/.test(content)) deps.push('level');
-  return deps.length ? '⚠️ ' + deps.join(', ') : '✅ 无区块链依赖';
-};
+    // 检查是否有多余的 const path = require('path');
+    // 并且文件中已经有 import path from 'path' 或其它 path 声明
+    const hasCommonJSRequire = content.includes("const path = require('path')") || content.includes('const path = require("path")');
+    const hasESImport = content.includes("import path from 'path'") || content.includes('import path from "path"');
 
-[...scripts.map(s => path.join(__dirname, 'scripts', s)), contractManagerPath].forEach(f => {
-  console.log(`${path.basename(f)}: ${checkDep(f)}`);
-});
+    if (hasCommonJSRequire && hasESImport) {
+        // 删除 CommonJS 的那一行（可能包含换行）
+        content = content.replace(/const path = require\(['"]path['"]\);\s*\n?/, '');
+        fs.writeFileSync(fullPath, content, 'utf8');
+        console.log(`✅ 已修复重复声明: ${fullPath}`);
+    } else if (hasCommonJSRequire && !hasESImport) {
+        // 如果只有 CommonJS 且没有 ES import，则保留（说明文件原本是 CommonJS）
+        console.log(`ℹ️ 无需修改: ${fullPath} (只有 CommonJS require，保留)`);
+    } else {
+        console.log(`ℹ️ 无需修改: ${fullPath} (没有检测到重复声明)`);
+    }
+}
 
-console.log('\n' + '='.repeat(60));
-console.log('✅ S6 分析完成。多数脚本需替换 ethers 调用或重写部署逻辑。');
-console.log('='.repeat(60));
+console.log('🔧 开始撤销修复脚本造成的重复 path 声明...\n');
+filesToFix.forEach(undoFix);
+console.log('\n✨ 完成！请重新启动后端测试。');

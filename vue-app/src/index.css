@@ -1,0 +1,264 @@
+@import 'font-awesome/css/font-awesome.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 1. 油画风格背景设置 - 深蓝灰色 #14282c */
+body {
+  background-color: #14282c;
+  
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(136, 60, 28, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 90% 30%, rgba(136, 60, 28, 0.3) 0%, transparent 30%),
+    radial-gradient(circle at 30% 70%, rgba(136, 60, 28, 0.35) 0%, transparent 35%),
+    radial-gradient(circle at 40% 30%, rgba(200, 114, 7, 0.5) 0%, transparent 35%),
+    radial-gradient(circle at 70% 60%, rgba(200, 114, 7, 0.4) 0%, transparent 30%),
+    radial-gradient(circle at 20% 80%, rgba(200, 114, 7, 0.3) 0%, transparent 25%),
+    radial-gradient(circle at 50% 50%, rgba(20, 40, 44, 0.8) 0%, rgba(20, 40, 44, 0.9) 100%),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23883c1c' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  
+  color: #e8d6c9;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* 2. 添加放大动画 */
+@keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-zoomIn {
+  animation: zoomIn 0.3s ease-out forwards;
+}
+
+/* 3. 确保图片预览有良好的显示效果 */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+@layer base {
+  body {
+    @apply text-white min-h-screen;
+  }
+  
+  a {
+    color: #c87207;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: #e8d6c9;
+    text-decoration: underline;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #f0d6b4;
+    margin-bottom: 0.5rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@layer components {
+  .card {
+    background: rgba(41, 21, 17, 0.7);
+    border: 1px solid #c87207;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s;
+  }
+  
+  .card:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  }
+  
+  .input-field {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(200, 114, 7, 0.5);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: white;
+  }
+  
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .input-field:focus {
+    outline: none;
+    ring: 2px solid rgba(200, 114, 7, 0.5);
+    border-color: transparent;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(to bottom, #c87207, #883c1c);
+    color: #f0d6b4;
+    border: 1px solid #5a2916;
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s;
+    transform: translateY(0);
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(to bottom, #d88318, #994428);
+    transform: translateY(-0.25rem);
+  }
+  
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s;
+    border: 1px solid rgba(200, 114, 7, 0.3);
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, #f0d6b4 0%, #e8d6c9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .shadow-card {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 导航栏样式 */
+.navbar {
+  background: linear-gradient(to right, #883c1c, #14282c);
+  border-bottom: 1px solid #c87207;
+}
+
+/* 文本选择颜色 */
+::selection {
+  background: #c87207;
+  color: #fff;
+}
+
+::-moz-selection {
+  background: #c87207;
+  color: #fff;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(20, 40, 44, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #883c1c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c87207;
+}
+
+/* 统一所有卡片样式 - 油画风格 */
+.card,
+.console-card,
+.verification-card,
+.upload-card,
+.stats-card,
+.glass-card,
+.bg-white\/10, 
+.border-white\/20,
+.rounded-2xl,
+.bg-white\/20,
+.bg-light,
+.bg-dark {
+  background: rgba(41, 21, 17, 0.7) !important;
+  border: 1px solid #c87207 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+  color: #e8d6c9 !important;
+}
+
+.card *,
+.console-card *,
+.verification-card *,
+.upload-card *,
+.stats-card *,
+.glass-card *,
+.bg-white\/10 *,
+.border-white\/20 *,
+.rounded-2xl *,
+.bg-white\/20 *,
+.bg-light *,
+.bg-dark * {
+  color: #e8d6c9 !important;
+}
+
+.stats-card {
+  text-align: center !important;
+  padding: 1.5rem !important;
+}
+
+.stats-card h3 {
+  font-size: 2rem !important;
+  margin-bottom: 0.5rem !important;
+  color: #f0d6b4 !important;
+}
+
+.stats-card p {
+  font-size: 0.9rem !important;
+  opacity: 0.8 !important;
+  margin-bottom: 0 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #f0d6b4 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+  margin-bottom: 1rem !important;
+}
+
+.bg-white {
+  background: rgba(41, 21, 17, 0.7) !important;
+}
+
+.btn-primary {
+  background: linear-gradient(to bottom, #c87207, #883c1c) !important;
+  color: #f0d6b4 !important;
+  border: 1px solid #5a2916 !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to bottom, #d88318, #994428) !important;
+}
